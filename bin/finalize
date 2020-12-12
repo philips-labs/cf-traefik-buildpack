@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# bin/finalize <build_path> <cache_path> <deps_path> <index>
+set -e
+
+BUILD_PATH=$1
+CACHE_PATH=$2
+DEPS_PATH=$3
+INDEX=$4
+
+mkdir -p "$BUILD_PATH/.profile.d"
+cat <<EOF > "$BUILD_PATH/.profile.d/traefik.sh"
+export PATH="\$PATH:/home/vcap/deps/${INDEX}/traefik/bin/"
+EOF

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# bin/release <build_path>
+set -e
+
+BUILD_PATH=$1
+BUILDPACK_PATH=$(dirname $(readlink -f ${BASH_SOURCE%/*}))
+
+cp "${BUILDPACK_PATH}/start_traefik.sh" "${BUILD_PATH}/start_traefik.sh" > /dev/null
+chmod +x "${BUILD_PATH}/start_traefik.sh" > /dev/null
+
+cat <<EOF
+default_process_types:
+  web: ./start_traefik.sh
+EOF

@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# bin/supply <build_path> <cache_path> <deps_path> <index>
+set -e
+
+BUILD_PATH=$1
+CACHE_PATH=$2
+DEPS_PATH=$3
+INDEX=$4
+
+BUILDPACK_PATH=$(dirname $(readlink -f ${BASH_SOURCE%/*}))
+
+source $BUILDPACK_PATH/config.sh
+
+trap "rm \"${CACHE_PATH}/traefik.${TRAEFIK_VERSION}.tar.gz\"" EXIT
+
+if [[ ! -f "${CACHE_PATH}/traefik.${TRAEFIK_VERSION}.tar.gz" ]]; then
+  echo "Downloading Traefik (${TRAEFIK_VERSION}) binaries..."
+  curl -sL https://github.com/traefik/traefik/releases/download/v${TRAEFIK_VERSION}/traefik_v${TRAEFIK_VERSION}_linux_${TRAEFIK_ARCH}.tar.gz -o ${CACHE_PATH}/traefik.${TRAEFIK_VERSION}.tar.gz
+  echo "Downloading checksums..."
+  curl -sL https://github.com/traefik/traefik/releases/download/v${TRAEFIK_VERSION}/traefik_v${TRAEFIK_VERSION}_checksums.txt -o ${CACHE_PATH}/${TRAEFIK_VERSION}_checksums.txt
+  
+  EXPECTED_CHECKSUM=`cat ${CACHE_PATH}/${TRAEFIK_VERSION}_checksums.txt | grep "traefik_v${TRAEFIK_VERSION}_linux_${TRAEFIK_ARCH}.tar.gz" | awk '{print $1}'`
+  CHECKSUM=`sha256sum ${CACHE_PATH}/traefik.${TRAEFIK_VERSION}.tar.gz | awk '{print $1}'`
+  echo "Validating checksums..."
+  if [[ "$CHECKSUM" == "$EXPECTED_CHECKSUM" ]]; then
+    echo "Checksums OK!"
+    TRAEFIK_PATH="${DEPS_PATH}/${INDEX}/traefik"
+    mkdir -p "${TRAEFIK_PATH}/bin"
+    pushd "${TRAEFIK_PATH}/bin" > /dev/null
+      tar zxf "${CACHE_PATH}/traefik.${TRAEFIK_VERSION}.tar.gz"
+      chmod +x traefik
+    popd > /dev/null
+  else
+    rm "${CACHE_PATH}/traefik.${TRAEFIK_VERSION}.tar.gz"
+    echo "Traefik checksums do not match!"
+    echo "Expected: $EXPECTED_CHECKSUM"
+    echo "Found   : $CHECKSUM"
+    exit 1
+  fi
+fi

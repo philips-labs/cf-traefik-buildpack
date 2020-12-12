@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# bin/detect <build_path>
+set -e
+
+if [[ -f "traefik.yml" ]]; then
+  exit 0
+else
+  echo "Cannot find traefik.yml!"
+  exit 1
+fi
